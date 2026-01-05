@@ -38,15 +38,21 @@ func UserRoutes(customRouter *CustomRouter) {
 		userHandler.GetUsersListHandler,
 	)
 
-	customRouter.routerGroup.GET("/:id/auth-link",
-		middlewares.AuthRequired(customRouter.log, customRouter.cfg),
-		middlewares.AdminRoleRequired(customRouter.log),
-		userHandler.CreateUserAuthLink,
-	)
-
 	customRouter.routerGroup.POST("/",
 		middlewares.AuthRequired(customRouter.log, customRouter.cfg),
 		middlewares.AdminRoleRequired(customRouter.log),
 		userHandler.CreateUser,
+	)
+
+	customRouter.routerGroup.PUT("/:id",
+		middlewares.AuthRequired(customRouter.log, customRouter.cfg),
+		middlewares.AdminRoleRequired(customRouter.log),
+		userHandler.UpdateUser,
+	)
+
+	customRouter.routerGroup.GET("/:id/auth-link",
+		middlewares.AuthRequired(customRouter.log, customRouter.cfg),
+		middlewares.AdminRoleRequired(customRouter.log),
+		userHandler.CreateUserAuthLink,
 	)
 }

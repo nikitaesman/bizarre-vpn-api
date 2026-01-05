@@ -162,3 +162,29 @@ func (s *UserService) CreateDefaultUser() {
 
 	log.Info(`Default user is created: username "admin"`)
 }
+
+func (s *UserService) UpdateUser(userId int64, updateUserPayload *models.UpdateUserPayload) (*models.BaseUser, error) {
+	if updateUserPayload.Role != models.UserRoleClient && updateUserPayload.Role != models.UserRoleAdmin {
+		return nil, coreErrors.ValidationError{
+			Entity: "user",
+			Msg:    "incorrect value",
+			Fields: []string{
+				"role",
+			},
+		}
+	}
+
+	if updateUserPayload.Login != nil {
+		if loginLength := utf8.RuneCountInString(*updateUserPayload.Login); loginLength < 5 || loginLength >= 20 {
+			return nil, coreErrors.ValidationError{
+				Entity: "user",
+				Msg:    "must be longer than 5 and shorter than 20",
+				Fields: []string{
+					"login",
+				},
+			}
+		}
+	}
+
+	return s.userStorage.UpdateUser(userId, updateUserPayload)
+}

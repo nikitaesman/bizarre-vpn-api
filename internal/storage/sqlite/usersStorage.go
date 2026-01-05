@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"bizarre-vpn-api/internal/models"
 	"bizarre-vpn-api/internal/shared/coreErrors"
@@ -177,6 +178,57 @@ func (u *UserStorage) CreateUser(
 	}
 
 	return &createdUser, nil
+}
+
+func (u *UserStorage) UpdateUser(userId int64, updateUserPayload *models.UpdateUserPayload) (*models.BaseUser, error) {
+	query := `UPDATE users SET 
+		login = :login,
+		username = :username,
+		role = :role,
+		updated_at = :updated_at
+		WHERE id = :id
+		RETURNING 
+		id,
+		username,
+		login,
+		role,
+		created_at,
+		updated_at 
+	`
+
+	rows, err := u.db.NamedQuery(query,
+		map[string]interface{}{
+			"id":         userId,
+			"login":      updateUserPayload.Login,
+			"username":   updateUserPayload.Username,
+			"role":       updateUserPayload.Role,
+			"updated_at": time.Now(),
+		},
+	)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: users.login") {
+			return nil, coreErrors.ErrorAlreadyExist
+		}
+
+		return nil, fmt.Errorf("updating user error: %w", err)
+	}
+
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, coreErrors.ErrorNotFound
+	}
+
+	var updatedUser models.BaseUser
+
+	err = rows.StructScan(&updatedUser)
+
+	if err != nil {
+		return nil, fmt.Errorf("struct scanning error: %w", err)
+	}
+
+	return &updatedUser, nil
 }
 
 func (u *UserStorage) GetUserRefreshToken(ID int64) (string, error) {
