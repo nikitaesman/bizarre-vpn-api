@@ -2,10 +2,16 @@ package routes
 
 import (
 	"bizarre-vpn-api/internal/api/handlers"
+	"bizarre-vpn-api/internal/api/middlewares"
 	"bizarre-vpn-api/internal/services"
 )
 
 func SubscriptionPlanRoutes(customRouter *CustomRouter) {
+	customRouter._router.Use(
+		middlewares.AuthRequired(customRouter.log, customRouter.cfg),
+		middlewares.AdminRoleRequired(customRouter.log),
+	)
+
 	subscriptionPlanService := services.NewSubscriptionPlanService(
 		customRouter.log,
 		customRouter.storage.SubscriptionPlanStorage,
