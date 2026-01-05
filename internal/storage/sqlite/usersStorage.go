@@ -28,8 +28,6 @@ func (u *UserStorage) MustInit() {
 		password TEXT
 	);`
 
-	//CREATE INDEX IF NOT EXISTS idx_id ON users(id)
-
 	_, err := u.db.Exec(query)
 
 	if err != nil {
@@ -53,12 +51,6 @@ func (u *UserStorage) GetUsersList() (*[]models.BaseUser, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getting users list error: %w", err)
 	}
-
-	// basicUsersList []models.BaseUser
-
-	// for _, fullUser := range usersList {
-	// 	basicUsersList = append(basicUsersList, fullUser.BaseUser)
-	// }
 
 	return &usersList, nil
 }
