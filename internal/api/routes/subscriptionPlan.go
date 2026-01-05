@@ -7,7 +7,7 @@ import (
 )
 
 func SubscriptionPlanRoutes(customRouter *CustomRouter) {
-	customRouter._router.Use(
+	customRouter.routerGroup.Use(
 		middlewares.AuthRequired(customRouter.log, customRouter.cfg),
 		middlewares.AdminRoleRequired(customRouter.log),
 	)
