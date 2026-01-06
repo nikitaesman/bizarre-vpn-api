@@ -50,6 +50,12 @@ func UserRoutes(customRouter *CustomRouter) {
 		userHandler.UpdateUser,
 	)
 
+	customRouter.routerGroup.DELETE("/:id",
+		middlewares.AuthRequired(customRouter.log, customRouter.cfg),
+		middlewares.AdminRoleRequired(customRouter.log),
+		userHandler.DeleteUser,
+	)
+
 	customRouter.routerGroup.GET("/:id/auth-link",
 		middlewares.AuthRequired(customRouter.log, customRouter.cfg),
 		middlewares.AdminRoleRequired(customRouter.log),

@@ -188,3 +188,7 @@ func (s *UserService) UpdateUser(userId int64, updateUserPayload *models.UpdateU
 
 	return s.userStorage.UpdateUser(userId, updateUserPayload)
 }
+
+func (s *UserService) DeleteUser(userId int64) error {
+	return s.userStorage.DeleteUser(userId)
+}

@@ -301,7 +301,7 @@ func (h *UserHandler) CreateUserAuthLink(c *gin.Context) {
 
 	userId, err := strconv.ParseInt(userIdStr, 10, 64)
 	if err != nil {
-		err = fmt.Errorf("convert error vpnServerIdStr: %w", err)
+		err = fmt.Errorf("convert userId error: %w", err)
 		log.Info(err.Error())
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		c.Abort()
@@ -328,4 +328,75 @@ func (h *UserHandler) CreateUserAuthLink(c *gin.Context) {
 	url := fmt.Sprintf("https://t.me/%v?start=%v", h.BotSharedData.Username, authLink.Code)
 
 	c.JSON(http.StatusOK, UrlResponse{Url: url})
+}
+
+// DeleteUser processes the user authorization request
+// @Summary Delete User
+// @Security token
+// @scope.admin only administrative information
+// @Description Delete User by admin
+// @Tags Users
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} MessageResponse "Success delete string"
+// @Failure 400 {object} ErrorResponse "Bad Request"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /users/{id} [delete]
+func (h *UserHandler) DeleteUser(c *gin.Context) {
+	const op = "handlers.user.DeleteUser"
+
+	log := h.Log.With(
+		slog.String("op", op),
+	)
+
+	tokenInfo, err := helpers.GetTokenInfo(c)
+
+	if err != nil {
+		log.Error("getting token info error", sl.Err(err))
+
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.Abort()
+		return
+	}
+
+	if tokenInfo.Role != models.UserRoleAdmin {
+		mes := "delete user forbidder for no admin users"
+		log.Debug(mes)
+
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: mes})
+		c.Abort()
+		return
+	}
+
+	userIdStr := c.Param("id")
+
+	userId, err := strconv.ParseInt(userIdStr, 10, 64)
+	if err != nil {
+		err = fmt.Errorf("convert userId error: %w", err)
+		log.Info(err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.Abort()
+		return
+	}
+
+	err = h.UserService.DeleteUser(userId)
+
+	if err != nil {
+		if errors.Is(coreErrors.ErrorNotFound, err) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			c.Abort()
+			return
+		}
+
+		log.Error("delete user error", sl.Err(err))
+
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "something went wrong"})
+		c.Abort()
+
+		return
+	}
+
+	c.JSON(http.StatusOK, MessageResponse{Message: "Delete user successful"})
 }

@@ -231,6 +231,28 @@ func (u *UserStorage) UpdateUser(userId int64, updateUserPayload *models.UpdateU
 	return &updatedUser, nil
 }
 
+func (u *UserStorage) DeleteUser(userId int64) error {
+	query := `DELETE FROM users WHERE id = ?`
+
+	result, err := u.db.Exec(query, userId)
+
+	if err != nil {
+		return fmt.Errorf("delete user error: %w", err)
+	}
+
+	affectedCount, err := result.RowsAffected()
+
+	if err != nil {
+		return fmt.Errorf("check affected rows error: %w", err)
+	}
+
+	if affectedCount == 0 {
+		return coreErrors.ErrorNotFound
+	}
+
+	return nil
+}
+
 func (u *UserStorage) GetUserRefreshToken(ID int64) (string, error) {
 	var refreshToken string
 
