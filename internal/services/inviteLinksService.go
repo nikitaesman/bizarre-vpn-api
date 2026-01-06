@@ -14,28 +14,28 @@ const (
 	LinkUserCodeLength = 6
 )
 
-type AuthLinkService struct {
+type InviteLinksService struct {
 	log                    *slog.Logger
-	authLinksStorage       interfaces.AuthLinksStorage
+	inviteLinksStorage     interfaces.InviteLinksStorage
 	lnkUserProviderStorage interfaces.LnkUserProviderStorage
 }
 
-func NewAuthLinksService(
+func NewInviteLinksService(
 	log *slog.Logger,
-	authLinksStorage interfaces.AuthLinksStorage,
+	inviteLinksStorage interfaces.InviteLinksStorage,
 	lnkUserProviderStorage interfaces.LnkUserProviderStorage,
-) *AuthLinkService {
-	return &AuthLinkService{
-		authLinksStorage:       authLinksStorage,
+) *InviteLinksService {
+	return &InviteLinksService{
+		inviteLinksStorage:     inviteLinksStorage,
 		log:                    log,
 		lnkUserProviderStorage: lnkUserProviderStorage,
 	}
 }
 
-func (s *AuthLinkService) LinkUserWithTgProviderByCode(code string, externalUserId string) (userId int64, Err error) {
-	op := "internal.services.authLinksService.LinkUserWithTgProviderByCode"
+func (s *InviteLinksService) LinkUserWithTgProviderByCode(code string, externalUserId string) (userId int64, Err error) {
+	op := "internal.services.InviteLinksService.LinkUserWithTgProviderByCode"
 
-	authLink, err := s.authLinksStorage.GetItemByCode(code)
+	inviteLink, err := s.inviteLinksStorage.GetInviteLinkByCode(code)
 
 	if err != nil {
 		if errors.Is(err, coreErrors.ErrorNotFound) {
@@ -45,7 +45,7 @@ func (s *AuthLinkService) LinkUserWithTgProviderByCode(code string, externalUser
 		return 0, fmt.Errorf("%v: %w", op, err)
 	}
 
-	userProviders, err := s.lnkUserProviderStorage.GetListByUserId(authLink.UserId)
+	userProviders, err := s.lnkUserProviderStorage.GetListByUserId(inviteLink.UserId)
 
 	if err != nil {
 		return 0, fmt.Errorf("%v: %w", op, err)
@@ -58,7 +58,7 @@ func (s *AuthLinkService) LinkUserWithTgProviderByCode(code string, externalUser
 	createLnkUserProviderPayload := models.CreateLnkUserProviderPayload{
 		ProviderType:   models.TelegramProviderName,
 		ExternalUserId: externalUserId,
-		UserId:         authLink.UserId,
+		UserId:         inviteLink.UserId,
 	}
 
 	createdLnkUserProvider, err := s.lnkUserProviderStorage.CreateLnkUserProvider(&createLnkUserProviderPayload, nil)
@@ -70,8 +70,8 @@ func (s *AuthLinkService) LinkUserWithTgProviderByCode(code string, externalUser
 	return createdLnkUserProvider.UserId, nil
 }
 
-func (s *AuthLinkService) CreateItem(userId int64) (*models.AuthLink, error) {
-	op := "internal.services.authLinksService.CreateItem"
+func (s *InviteLinksService) CreateItem(userId int64) (*models.InviteLink, error) {
+	op := "internal.services.InviteLinksService.CreateItem"
 
 	userProviders, err := s.lnkUserProviderStorage.GetListByUserId(userId)
 
@@ -89,17 +89,17 @@ func (s *AuthLinkService) CreateItem(userId int64) (*models.AuthLink, error) {
 		return nil, fmt.Errorf("%v: generate random code error: %w", op, err)
 	}
 
-	payload := &models.AuthLinkCreatePayload{
+	payload := &models.InviteLinkCreatePayload{
 		UserId: userId,
 		Code:   randomCode,
-		Status: models.AuthLinkStatusCreated,
+		Status: models.InviteLinkStatusCreated,
 	}
 
-	authLink, err := s.authLinksStorage.CreateItem(payload)
+	inviteLink, err := s.inviteLinksStorage.CreateInviteLink(payload)
 
 	if err != nil {
-		return nil, fmt.Errorf("%v: create authLink error: %w", op, err)
+		return nil, fmt.Errorf("%v: create inviteLink error: %w", op, err)
 	}
 
-	return authLink, nil
+	return inviteLink, nil
 }

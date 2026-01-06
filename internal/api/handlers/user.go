@@ -18,10 +18,10 @@ import (
 )
 
 type UserHandler struct {
-	Log             *slog.Logger
-	BotSharedData   *bot.BotSharedData
-	UserService     *services.UserService
-	AuthLinkService *services.AuthLinkService
+	Log                *slog.Logger
+	BotSharedData      *bot.BotSharedData
+	UserService        *services.UserService
+	InviteLinksService *services.InviteLinksService
 }
 
 type UserAuthorizationRequest struct {
@@ -276,22 +276,22 @@ type UrlResponse struct {
 	Url string `json:"url"`
 }
 
-// CreateUserAuthLink returns tg bot auth url
-// @Summary CreateUserAuthLink by userId
-// @Description CreateUserAuthLink by userId
+// CreateUserInviteLink returns tg bot auth url
+// @Summary CreateUserInviteLink by userId
+// @Description CreateUserInviteLink by userId
 // @Security token
 // @scope.admin only administrative information
-// @Tags Users
+// @Tags Users Invite Link
 // @Param id path int true "UserId"
 // @Produce json
-// @Success 200 {object} UrlResponse "tg bot auth url"
+// @Success 200 {object} UrlResponse "tg bot invite url"
 // @Failure 401 {object} ErrorResponse "Unauthorized"
 // @Failure 403 {object} ErrorResponse "Forbidden"
 // @Failure 400 {object} ErrorResponse "User already linked"
 // @Failure 500 {object} ErrorResponse "Internal server error"
-// @Router /users/{id}/auth-link [get]
-func (h *UserHandler) CreateUserAuthLink(c *gin.Context) {
-	const op = "handlers.user.CreateUserAuthLink"
+// @Router /users/{id}/invite-link [get]
+func (h *UserHandler) CreateUserInviteLink(c *gin.Context) {
+	const op = "handlers.user.CreateUserInviteLink"
 
 	log := h.Log.With(
 		slog.String("op", op),
@@ -308,7 +308,7 @@ func (h *UserHandler) CreateUserAuthLink(c *gin.Context) {
 		return
 	}
 
-	authLink, err := h.AuthLinkService.CreateItem(userId)
+	inviteLink, err := h.InviteLinksService.CreateItem(userId)
 
 	if err != nil {
 		if errors.Is(coreErrors.ErrorUserAlreadyLinked, err) {
@@ -317,7 +317,7 @@ func (h *UserHandler) CreateUserAuthLink(c *gin.Context) {
 			return
 		}
 
-		log.Error("create user AuthLink error", sl.Err(err))
+		log.Error("create user inviteLink error", sl.Err(err))
 
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "something went wrong"})
 		c.Abort()
@@ -325,7 +325,7 @@ func (h *UserHandler) CreateUserAuthLink(c *gin.Context) {
 		return
 	}
 
-	url := fmt.Sprintf("https://t.me/%v?start=%v", h.BotSharedData.Username, authLink.Code)
+	url := fmt.Sprintf("https://t.me/%v?start=%v", h.BotSharedData.Username, inviteLink.Code)
 
 	c.JSON(http.StatusOK, UrlResponse{Url: url})
 }

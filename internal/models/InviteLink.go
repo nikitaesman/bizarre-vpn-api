@@ -1,0 +1,24 @@
+package models
+
+import "time"
+
+type InviteLinkStatus = string
+
+const (
+	InviteLinkStatusCreated = "created"
+)
+
+type InviteLink struct {
+	Id        int64            `db:"id" json:"id" `
+	UserId    int64            `db:"user_id" json:"userId" `
+	Code      string           `db:"code" json:"code" `
+	Status    InviteLinkStatus `db:"status" json:"status" `
+	CreatedAt time.Time        `db:"created_at" json:"createdAt"`
+	UpdatedAt time.Time        `db:"updated_at" json:"updatedAt"`
+}
+
+type InviteLinkCreatePayload struct {
+	UserId int64            `db:"user_id" json:"userId"`
+	Code   string           `db:"code" json:"code"`
+	Status InviteLinkStatus `db:"status" json:"status" `
+}

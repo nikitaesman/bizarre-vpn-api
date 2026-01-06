@@ -12,17 +12,17 @@ func UserRoutes(customRouter *CustomRouter) {
 		customRouter.storage.UserStorage,
 	)
 
-	authLinkService := services.NewAuthLinksService(
+	inviteLinksService := services.NewInviteLinksService(
 		customRouter.log,
-		customRouter.storage.AuthLinksStorage,
+		customRouter.storage.InviteLinksStorage,
 		customRouter.storage.LnkUserProviderStorage,
 	)
 
 	userHandler := handlers.UserHandler{
-		Log:             customRouter.log,
-		BotSharedData:   customRouter.botSharedData,
-		UserService:     userService,
-		AuthLinkService: authLinkService,
+		Log:                customRouter.log,
+		BotSharedData:      customRouter.botSharedData,
+		UserService:        userService,
+		InviteLinksService: inviteLinksService,
 	}
 
 	customRouter.AddGroup("/auth", AuthRoutes)
@@ -56,9 +56,9 @@ func UserRoutes(customRouter *CustomRouter) {
 		userHandler.DeleteUser,
 	)
 
-	customRouter.routerGroup.GET("/:id/auth-link",
+	customRouter.routerGroup.GET("/:id/invite-link",
 		middlewares.AuthRequired(customRouter.log, customRouter.cfg),
 		middlewares.AdminRoleRequired(customRouter.log),
-		userHandler.CreateUserAuthLink,
+		userHandler.CreateUserInviteLink,
 	)
 }
