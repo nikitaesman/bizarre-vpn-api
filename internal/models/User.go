@@ -29,3 +29,9 @@ type CreateUserPayload struct {
 	Role     UserRole `json:"role" validate:"required"`
 	Password *string  `json:"password" validate:"required"`
 }
+
+type UpdateUserPayload struct {
+	Login    *string  `json:"login" validate:"required"`
+	Username string   `json:"username" validate:"required"`
+	Role     UserRole `json:"role" validate:"required"`
+}

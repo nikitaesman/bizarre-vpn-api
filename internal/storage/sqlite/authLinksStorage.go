@@ -65,14 +65,14 @@ func (s *AuthLinksStorage) CreateItem(payload *models.AuthLinkCreatePayload) (*m
 
 	var authLink models.AuthLink
 
-	if rows.Next() {
-		err = rows.StructScan(&authLink)
-
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan inserted auth link: %w", err)
-		}
-	} else {
+	if !rows.Next() {
 		return nil, fmt.Errorf("not rows next")
+	}
+
+	err = rows.StructScan(&authLink)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan inserted auth link: %w", err)
 	}
 
 	return &authLink, nil

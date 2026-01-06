@@ -107,7 +107,7 @@ func (h *UserHandler) GetUserDataHandler(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param CreateUserPayload body models.CreateUserPayload true "Create User Data"
-// @Success 200 {object} []models.BaseUser "Users Data"
+// @Success 200 {object} models.BaseUser "Created user Data"
 // @Failure 400 {object} ErrorResponse "Bad Request"
 // @Failure 401 {object} ErrorResponse "Unauthorized"
 // @Failure 403 {object} ErrorResponse "Forbidden"
@@ -179,6 +179,99 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, createdUser)
 }
 
+// UpdateUser processes the user authorization request
+// @Summary Update User
+// @Security token
+// @scope.admin only administrative information
+// @Description Update User by admin
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param UpdateUserPayload body models.UpdateUserPayload true "Update User Data"
+// @Success 200 {object} models.BaseUser "Updated User Data"
+// @Failure 400 {object} ErrorResponse "Bad Request"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /users/{id} [put]
+func (h *UserHandler) UpdateUser(c *gin.Context) {
+	const op = "handlers.user.UpdateUser"
+
+	log := h.Log.With(
+		slog.String("op", op),
+	)
+
+	tokenInfo, err := helpers.GetTokenInfo(c)
+
+	if err != nil {
+		log.Error("getting token info error", sl.Err(err))
+
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.Abort()
+		return
+	}
+
+	if tokenInfo.Role != models.UserRoleAdmin {
+		mes := "update user forbidder for no admin users"
+		log.Debug(mes)
+
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: mes})
+		c.Abort()
+		return
+	}
+
+	userIdStr := c.Param("id")
+
+	userId, err := strconv.ParseInt(userIdStr, 10, 64)
+	if err != nil {
+		err = fmt.Errorf("convert userId error: %w", err)
+		log.Info(err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.Abort()
+		return
+	}
+
+	var body models.UpdateUserPayload
+
+	err = c.ShouldBindJSON(&body)
+
+	if err != nil {
+		log.Error("parsing request json error", sl.Err(err))
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.Abort()
+		return
+	}
+
+	log.Debug("body", slog.Any("UpdateUserPayload", body))
+
+	updatedUser, err := h.UserService.UpdateUser(userId, &body)
+
+	if err != nil {
+		var validation coreErrors.ValidationError
+
+		if errors.As(err, &validation) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
+
+		if errors.Is(coreErrors.ErrorAlreadyExist, err) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			c.Abort()
+			return
+		}
+
+		log.Error("update user error", sl.Err(err))
+
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "something went wrong"})
+		c.Abort()
+
+		return
+	}
+
+	c.JSON(http.StatusOK, updatedUser)
+}
+
 type UrlResponse struct {
 	Url string `json:"url"`
 }
@@ -208,7 +301,7 @@ func (h *UserHandler) CreateUserAuthLink(c *gin.Context) {
 
 	userId, err := strconv.ParseInt(userIdStr, 10, 64)
 	if err != nil {
-		err = fmt.Errorf("convert error vpnServerIdStr: %w", err)
+		err = fmt.Errorf("convert userId error: %w", err)
 		log.Info(err.Error())
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		c.Abort()
@@ -235,4 +328,75 @@ func (h *UserHandler) CreateUserAuthLink(c *gin.Context) {
 	url := fmt.Sprintf("https://t.me/%v?start=%v", h.BotSharedData.Username, authLink.Code)
 
 	c.JSON(http.StatusOK, UrlResponse{Url: url})
+}
+
+// DeleteUser processes the user authorization request
+// @Summary Delete User
+// @Security token
+// @scope.admin only administrative information
+// @Description Delete User by admin
+// @Tags Users
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} MessageResponse "Success delete string"
+// @Failure 400 {object} ErrorResponse "Bad Request"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /users/{id} [delete]
+func (h *UserHandler) DeleteUser(c *gin.Context) {
+	const op = "handlers.user.DeleteUser"
+
+	log := h.Log.With(
+		slog.String("op", op),
+	)
+
+	tokenInfo, err := helpers.GetTokenInfo(c)
+
+	if err != nil {
+		log.Error("getting token info error", sl.Err(err))
+
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.Abort()
+		return
+	}
+
+	if tokenInfo.Role != models.UserRoleAdmin {
+		mes := "delete user forbidder for no admin users"
+		log.Debug(mes)
+
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: mes})
+		c.Abort()
+		return
+	}
+
+	userIdStr := c.Param("id")
+
+	userId, err := strconv.ParseInt(userIdStr, 10, 64)
+	if err != nil {
+		err = fmt.Errorf("convert userId error: %w", err)
+		log.Info(err.Error())
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.Abort()
+		return
+	}
+
+	err = h.UserService.DeleteUser(userId)
+
+	if err != nil {
+		if errors.Is(coreErrors.ErrorNotFound, err) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			c.Abort()
+			return
+		}
+
+		log.Error("delete user error", sl.Err(err))
+
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "something went wrong"})
+		c.Abort()
+
+		return
+	}
+
+	c.JSON(http.StatusOK, MessageResponse{Message: "Delete user successful"})
 }
