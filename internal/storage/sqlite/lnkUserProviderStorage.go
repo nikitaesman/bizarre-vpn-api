@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"bizarre-vpn-api/internal/models"
+	"bizarre-vpn-api/internal/shared/coreErrors"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -22,6 +24,7 @@ func (s *LnkUserProviderStorage) MustInit() {
 		user_id INTEGER NOT NULL,
 		FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
 		UNIQUE (user_id, provider_type)
+		UNIQUE (external_user_id, provider_type)
 	)`
 
 	_, err := s.db.Exec(query)
@@ -85,6 +88,13 @@ func (s *LnkUserProviderStorage) CreateLnkUserProvider(
 
 	rows, err := sqlx.NamedQuery(executor, query, createLnkUserProviderPayload)
 	if err != nil {
+		if strings.Contains(
+			err.Error(),
+			"constraint failed: UNIQUE constraint failed: lnk_user_providers.external_user_id, lnk_user_providers.provider_type",
+		) {
+			return nil, coreErrors.ErrorUserAlreadyLinked
+		}
+
 		return nil, fmt.Errorf("failed to create LnkUserProvider: %w", err)
 	}
 
