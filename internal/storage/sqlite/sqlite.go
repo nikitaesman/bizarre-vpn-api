@@ -25,7 +25,7 @@ type Storage struct {
 	ProtocolsStorage                *LibraryItemStorage
 	LnkProtocolsBackendTypesStorage *LnkProtocolsBackendTypesStorage
 	VpnServersStorage               *VpnServersStorage
-	AuthLinksStorage                *AuthLinksStorage
+	InviteLinksStorage              *InviteLinksStorage
 }
 
 func MustInit(dbPath string, log *slog.Logger) *Storage {
@@ -89,9 +89,9 @@ func MustInit(dbPath string, log *slog.Logger) *Storage {
 
 	vpnServersStorage.MustInit()
 
-	authLinksStorage := &AuthLinksStorage{db}
+	inviteLinksStorage := &InviteLinksStorage{db}
 
-	authLinksStorage.MustInit()
+	inviteLinksStorage.MustInit()
 
 	storage := &Storage{
 		db:                              db,
@@ -102,7 +102,7 @@ func MustInit(dbPath string, log *slog.Logger) *Storage {
 		ProtocolsStorage:                protocolsStorage,
 		LnkProtocolsBackendTypesStorage: lnkProtocolsBackendTypesStorage,
 		VpnServersStorage:               vpnServersStorage,
-		AuthLinksStorage:                authLinksStorage,
+		InviteLinksStorage:              inviteLinksStorage,
 	}
 
 	return storage

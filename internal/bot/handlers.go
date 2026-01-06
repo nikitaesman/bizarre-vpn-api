@@ -48,11 +48,11 @@ func handleStart(c tele.Context, webAppUrl string, log *slog.Logger, storage *cS
 		return c.Send("Запросите инвайт ссылку у представителя bizarre")
 	}
 
-	authLinkServiceInstance := services.NewAuthLinksService(log, storage.AuthLinksStorage, storage.LnkUserProviderStorage)
+	inviteLinksService := services.NewInviteLinksService(log, storage.InviteLinksStorage, storage.LnkUserProviderStorage)
 
 	preparedExternalId := strconv.Itoa(int(teleUser.ID))
 
-	userId, err := authLinkServiceInstance.LinkUserWithTgProviderByCode(payload, preparedExternalId)
+	userId, err := inviteLinksService.LinkUserWithTgProviderByCode(payload, preparedExternalId)
 
 	if err != nil {
 		if errors.Is(err, coreErrors.ErrorUserAlreadyLinked) {
